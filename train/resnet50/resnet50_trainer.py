@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 ## @package resnet50_trainer
 # Module caffe2.python.examples.resnet50_trainer
 from __future__ import absolute_import
@@ -20,20 +21,40 @@ import caffe2.python.predictor.predictor_py_utils as pred_utils
 from caffe2.python.predictor_constants import predictor_constants as predictor_constants
 
 '''
+----------------------------------------------------------------------------------------
+Resnet50用の並列化されたマルチGPU分散トレーナー。トレーニングに使用することができます
+例えば、imagenetデータ上で。
+
 Parallelized multi-GPU distributed trainer for Resnet 50. Can be used to train
 on imagenet data, for example.
 
+----------------------------------------------------------------------------------------
+num_shards = 1に設定することで、トレーナーをシングルマシンのマルチgpuモードで実行することができます
+
 To run the trainer in single-machine multi-gpu mode by setting num_shards = 1.
+
+----------------------------------------------------------------------------------------
+trainerをMマシンを使用して複数マシンのマルチgpuモードで実行するには、
+num_shards = Mを指定して、すべてのマシンで同じプログラムを実行します。
+shard_id = [0、M-1] の一意の整数。
 
 To run the trainer in multi-machine multi-gpu mode with M machines,
 run the same program on all machines, specifying num_shards = M, and
 shard_id = a unique integer in the set [0, M-1].
+
+----------------------------------------------------------------------------------------
+ランデブー(集合)（トレーナーのプロセスはお互いを知る必要があります）
+すべてのプロセスから見えるディレクトリパスを使用するか
+（たとえば、NFSディレクトリ）、またはRedisインスタンスを使用します。
+前者を`file_store_path`引数を渡します。
+後者を使用するには、`redis_host`と` redis_port`の引数です。
 
 For rendezvous (the trainer processes have to know about each other),
 you can either use a directory path that is visible to all processes
 (e.g. NFS directory), or use a Redis instance. Use the former by
 passing the `file_store_path` argument. Use the latter by passing the
 `redis_host` and `redis_port` arguments.
+----------------------------------------------------------------------------------------
 '''
 
 logging.basicConfig()
@@ -78,6 +99,7 @@ def AddMomentumParameterUpdate(train_model, LR):
         )
 
         # Update param_grad and param_momentum in place
+        # Nesterovの加速勾配降下法
         train_model.net.MomentumSGDUpdate(
             [param_grad, param_momentum, LR, param],
             [param_grad, param_momentum, param],
