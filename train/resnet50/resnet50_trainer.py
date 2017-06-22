@@ -81,7 +81,7 @@ def AddImageInput(model, reader, batch_size, img_size):
         crop=img_size,
         mirror=1
     )
-
+    
     data = model.StopGradient(data, data)
 
 
