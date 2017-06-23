@@ -7,7 +7,7 @@ python resnet50_trainer.py
 ##Option
 
 | option | default | description |
-|:-----------|:------------:|:------------|
+|:-----------|:------------|:------------|
 | --train_data | None | Path to training data or 'everstore_sampler' |
 | --test_data | None | Path to test data |
 | --db_type | lmdb | Database type (such as lmdb or leveldb) |
