@@ -81,7 +81,7 @@ def AddImageInput(model, reader, batch_size, img_size):
         crop=img_size,
         mirror=1
     )
-    
+
     data = model.StopGradient(data, data)
 
 
@@ -164,6 +164,9 @@ def LoadModel(path, model):
     assert workspace.RunNetOnce(predict_init_net)
     assert workspace.RunNetOnce(init_net)
 
+'''
+1epochの学習処理、これがループする。
+'''
 
 def RunEpoch(
     args,
@@ -236,9 +239,12 @@ def RunEpoch(
     # TODO: add checkpointing
     return epoch + 1
 
-
+'''
+mainから呼ばれる、学習を行うメインの関数
+'''
 def Train(args):
     # Either use specified device list or generate one
+    # GPUどれを使うのか選択
     if args.gpus is not None:
         gpus = [int(x) for x in args.gpus.split(',')]
         num_gpus = len(gpus)
@@ -249,6 +255,8 @@ def Train(args):
     log.info("Running on GPUs: {}".format(gpus))
 
     # Verify valid batch size
+    # GPUごとに、bacth_sizeないをGPU数で割った画像数分回す
+    # 全体のBatch SIZEは、ノード数×BS
     total_batch_size = args.batch_size
     batch_per_device = total_batch_size // num_gpus
     assert \
@@ -256,29 +264,36 @@ def Train(args):
         "Number of GPUs must divide batch size"
 
     # Round down epoch size to closest multiple of batch size across machines
+    # Epoch SIZE を調整
+    # epochの繰り返し回数はプログラムで算出して指定したものから、うまくいく値に近づける
     global_batch_size = total_batch_size * args.num_shards
     epoch_iters = int(args.epoch_size / global_batch_size)
     args.epoch_size = epoch_iters * global_batch_size
     log.info("Using epoch size: {}".format(args.epoch_size))
 
     # Create ModelHelper object
+    # exhaustive : 徹底的な余すところのない
     train_arg_scope = {
         'order': 'NCHW',
         'use_cudnn': True,
         'cudnn_exhaustice_search': True,
         'ws_nbytes_limit': (args.cudnn_workspace_limit_mb * 1024 * 1024),
     }
+
+    # モデルヘルパーが名前だけもらってネットワーククラスを作ってる感じ
     train_model = model_helper.ModelHelper(
         name="resnet50", arg_scope=train_arg_scope
     )
 
     num_shards = args.num_shards
     shard_id = args.shard_id
+    # 1 Node 以上の場合
     if num_shards > 1:
         # Create rendezvous for distributed computation
         store_handler = "store_handler"
         if args.redis_host is not None:
             # Use Redis for rendezvous if Redis host is specified
+            # Redisを使う場合
             workspace.RunOperatorOnce(
                 core.CreateOperator(
                     "RedisStoreHandlerCreate", [], [store_handler],
@@ -289,6 +304,7 @@ def Train(args):
             )
         else:
             # Use filesystem for rendezvous otherwise
+            # File Systemを使う場合
             workspace.RunOperatorOnce(
                 core.CreateOperator(
                     "FileStoreHandlerCreate", [], [store_handler],
@@ -299,12 +315,13 @@ def Train(args):
             kv_handler=store_handler,
             shard_id=shard_id,
             num_shards=num_shards,
-            engine="GLOO",
+            engine="GLOO", #これは入ってなかったらまずいかな？
             exit_nets=None)
     else:
         rendezvous = None
 
     # Model building functions
+    #
     def create_resnet50_model_ops(model, loss_scale):
         [softmax, loss] = resnet.create_resnet50(
             model,
@@ -334,6 +351,7 @@ def Train(args):
         AddMomentumParameterUpdate(model, LR)
 
     # Input. Note that the reader must be shared with all GPUS.
+    # DBがすべてのGPUに共有される
     reader = train_model.CreateDB(
         "reader",
         db=args.train_data,
@@ -351,6 +369,7 @@ def Train(args):
         )
 
     # Create parallelized model
+    # GPUでのデータ並列モデルを作っている
     data_parallel_model.Parallelize_GPU(
         train_model,
         input_builder_fun=add_image_input,
@@ -361,8 +380,11 @@ def Train(args):
         optimize_gradient_memory=True,
     )
 
+    # ------------------------------------------------------------
     # Add test model, if specified
     test_model = None
+
+    # Test用のDBがコマンドライン引数がsetされれば用意
     if (args.test_data is not None):
         log.info("----- Create test net ----")
         test_arg_scope = {
@@ -397,9 +419,13 @@ def Train(args):
         )
         workspace.RunNetOnce(test_model.param_init_net)
         workspace.CreateNet(test_model.net)
+    # ------------------------------------------------------------
 
     workspace.RunNetOnce(train_model.param_init_net)
     workspace.CreateNet(train_model.net)
+
+    # Networkのprototxt
+    print(train_model.net.Proto())
 
     epoch = 0
     # load the pre-trained model and reset epoch
@@ -420,6 +446,7 @@ def Train(args):
         else:
             log.warning("The format of load_model_path doesn't match!")
 
+    # LogのPrefix
     expname = "resnet50_gpu%d_b%d_L%d_lr%.2f_v2" % (
         args.num_gpus,
         total_batch_size,
@@ -429,6 +456,7 @@ def Train(args):
     explog = experiment_util.ModelTrainerLog(expname, args)
 
     # Run the training one epoch a time
+    # ループでRunEpochがをepochとしてを回す。
     while epoch < args.num_epochs:
         epoch = RunEpoch(
             args,
@@ -442,6 +470,7 @@ def Train(args):
         )
 
         # Save the model for each epoch
+        # 学習後のモデル保存
         SaveModel(args, train_model, epoch)
 
         model_path = "%s/%s_" % (
@@ -449,6 +478,7 @@ def Train(args):
             args.save_model_name
         )
         # remove the saved model from the previous epoch if it exists
+        # もし前回のお出るがあったら、決して更新
         if os.path.isfile(model_path + str(epoch - 1) + ".mdl"):
             os.remove(model_path + str(epoch - 1) + ".mdl")
 
