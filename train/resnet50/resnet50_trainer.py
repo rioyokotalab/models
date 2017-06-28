@@ -321,7 +321,7 @@ def Train(args):
         rendezvous = None
 
     # Model building functions
-    #
+    # modelのレイヤーを組み立てる
     def create_resnet50_model_ops(model, loss_scale):
         [softmax, loss] = resnet.create_resnet50(
             model,
