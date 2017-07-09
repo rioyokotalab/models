@@ -30,7 +30,7 @@ CAFFE_MODELS = "/home/pi/models"
 IMAGE_LOCATION = "/home/pi/models/img/2.jpg"
 
 # What model are we using? You should have already converted or downloaded one.
-# format below is the model's: 
+# format below is the model's:
 # folder, INIT_NET, predict_net, mean, input image size
 # you can switch squeezenet out with 'bvlc_alexnet', 'bvlc_googlenet' or others that you have downloaded
 # if you have a mean file, place it in the same dir as the model
@@ -46,7 +46,7 @@ t1 = time.time()
 def crop_center(img,cropx,cropy):
     y,x,c = img.shape
     startx = x//2-(cropx//2)
-    starty = y//2-(cropy//2)    
+    starty = y//2-(cropy//2)
     return img[starty:starty+cropy,startx:startx+cropx]
 
 def rescale(img, input_height, input_width):
@@ -90,7 +90,7 @@ INPUT_IMAGE_SIZE = MODEL[4]
 
 # make sure all of the files are around...
 #if not os.path.exists(CAFFE2_ROOT):
-#    print("Houston, you may have a problem.") 
+#    print("Houston, you may have a problem.")
 INIT_NET = os.path.join(CAFFE_MODELS, MODEL[0], MODEL[1])
 print 'INIT_NET = ', INIT_NET
 PREDICT_NET = os.path.join(CAFFE_MODELS, MODEL[0], MODEL[2])
@@ -103,7 +103,7 @@ else:
         print "Caffe model file, " + PREDICT_NET + " was not found!"
     else:
         print "All needed files found! Loading the model in the next block."
-        
+
 # load and transform image
 img = skimage.img_as_float(skimage.io.imread(IMAGE_LOCATION)).astype(np.float32)
 img = rescale(img, INPUT_IMAGE_SIZE, INPUT_IMAGE_SIZE)
@@ -141,17 +141,19 @@ with open(INIT_NET) as f:
     init_net = f.read()
 with open(PREDICT_NET) as f:
     predict_net = f.read()
-    
+
 p = workspace.Predictor(init_net, predict_net)
 
 # run the net and return prediction
+t3 = time.time()
 results = p.run([img])
+t4 = time.time()
 
 # turn it into something we can play with and examine which is in a multi-dimensional array
 results = np.asarray(results)
 print "results shape: ", results.shape
 
-# the rest of this is digging through the results 
+# the rest of this is digging through the results
 results = np.delete(results, 1)
 index = 0
 highest = 0
@@ -164,7 +166,7 @@ for i, r in enumerate(results):
     arr = np.append(arr, np.array([[i,r]]), axis=0)
     if (r > highest):
         highest = r
-        index = i 
+        index = i
 
 # top 5 results
 rank5 = sorted(arr, key=lambda x: x[1], reverse=True)[:5]
@@ -190,4 +192,5 @@ for line in file:
 
 file.close()
 t2 = time.time()
+print('inference time: ' + str(t4 - t3) + '(sec)')
 print('processing time: ' + str(t2 - t1) + '(sec)')
