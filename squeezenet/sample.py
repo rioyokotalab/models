@@ -6,10 +6,12 @@ from matplotlib import pyplot
 import os
 from caffe2.python import core, workspace, models
 import urllib2
+import time
 print("Required modules imported.")
 
 # Configuration --- Change to your setup and preferences!
-CAFFE_MODELS = "/home/hiroki11/models"
+# CAFFE_MODELS = "/home/hiroki11/models"
+CAFFE_MODELS = "/home/pi/models"
 
 # sample images you can try, or use any URL to a regular image.
 # IMAGE_LOCATION = "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f8/Whole-Lemon.jpg/1235px-Whole-Lemon.jpg"
@@ -23,10 +25,12 @@ CAFFE_MODELS = "/home/hiroki11/models"
 # IMAGE_LOCATION = "images/pretzel.jpg"
 # IMAGE_LOCATION = "images/orangutan.jpg"
 # IMAGE_LOCATION = "images/aircraft-carrier.jpg"
-IMAGE_LOCATION = "/home/hiroki11/models/img/3.jpg"
+
+# IMAGE_LOCATION = "/home/hiroki11/models/img/3.jpg"
+IMAGE_LOCATION = "/home/pi/models/img/2.jpg"
 
 # What model are we using? You should have already converted or downloaded one.
-# format below is the model's: 
+# format below is the model's:
 # folder, INIT_NET, predict_net, mean, input image size
 # you can switch squeezenet out with 'bvlc_alexnet', 'bvlc_googlenet' or others that you have downloaded
 # if you have a mean file, place it in the same dir as the model
@@ -34,13 +38,15 @@ MODEL = 'squeezenet', 'init_net.pb', 'predict_net.pb', 'ilsvrc_2012_mean.npy', 2
 
 # codes - these help decypher the output and source from a list from AlexNet's object codes to provide an result like "tabby cat" or "lemon" depending on what's in the picture you submit to the neural network.
 # The list of output codes for the AlexNet models (squeezenet)
-codes =  "https://gist.githubusercontent.com/aaronmarkham/cd3a6b6ac071eca6f7b4a6e40e6038aa/raw/9edb4038a37da6b5a44c3b5bc52e448ff09bfe5b/alexnet_codes"
+codes =  "/home/pi/models/label/alexnet_codes"
 print "Config set!"
+
+t1 = time.time()
 
 def crop_center(img,cropx,cropy):
     y,x,c = img.shape
     startx = x//2-(cropx//2)
-    starty = y//2-(cropy//2)    
+    starty = y//2-(cropy//2)
     return img[starty:starty+cropy,startx:startx+cropx]
 
 def rescale(img, input_height, input_width):
@@ -84,7 +90,7 @@ INPUT_IMAGE_SIZE = MODEL[4]
 
 # make sure all of the files are around...
 #if not os.path.exists(CAFFE2_ROOT):
-#    print("Houston, you may have a problem.") 
+#    print("Houston, you may have a problem.")
 INIT_NET = os.path.join(CAFFE_MODELS, MODEL[0], MODEL[1])
 print 'INIT_NET = ', INIT_NET
 PREDICT_NET = os.path.join(CAFFE_MODELS, MODEL[0], MODEL[2])
@@ -97,7 +103,7 @@ else:
         print "Caffe model file, " + PREDICT_NET + " was not found!"
     else:
         print "All needed files found! Loading the model in the next block."
-        
+
 # load and transform image
 img = skimage.img_as_float(skimage.io.imread(IMAGE_LOCATION)).astype(np.float32)
 img = rescale(img, INPUT_IMAGE_SIZE, INPUT_IMAGE_SIZE)
@@ -135,7 +141,7 @@ with open(INIT_NET) as f:
     init_net = f.read()
 with open(PREDICT_NET) as f:
     predict_net = f.read()
-    
+
 p = workspace.Predictor(init_net, predict_net)
 
 # run the net and return prediction
@@ -145,7 +151,7 @@ results = p.run([img])
 results = np.asarray(results)
 print "results shape: ", results.shape
 
-# the rest of this is digging through the results 
+# the rest of this is digging through the results
 results = np.delete(results, 1)
 index = 0
 highest = 0
@@ -158,16 +164,30 @@ for i, r in enumerate(results):
     arr = np.append(arr, np.array([[i,r]]), axis=0)
     if (r > highest):
         highest = r
-        index = i 
+        index = i
 
-# top 3 results
-print "Raw top 3 results:", sorted(arr, key=lambda x: x[1], reverse=True)[:3]
+# top 5 results
+rank5 = sorted(arr, key=lambda x: x[1], reverse=True)[:5]
+print "Raw top 5 results:", rank5
 
 # now we can grab the code list
-response = urllib2.urlopen(codes)
+# response = urllib2.urlopen(codes)
+file = open(codes, 'r')
 
 # and lookup our result from the list
-for line in response:
+for line in file:
     code, result = line.partition(":")[::2]
-    if (code.strip() == str(index)):
-        print MODEL[0], "infers that the image contains ", result.strip()[1:-2], "with a ", highest*100, "% probability"
+    if (code.strip() == str(int(rank5[0][0]))):
+        print MODEL[0], "1st infers that the image contains ", result.strip()[1:-2], "with a ", highest*100, "% probability"
+    if (code.strip() == str(int(rank5[1][0]))):
+	print MODEL[0], "2nd infers that the image contains ", result.strip()[1:-2], "with a ", highest*100, "% probability"
+    if (code.strip() == str(int(rank5[2][0]))):
+	print MODEL[0], "3rd infers that the image contains ", result.strip()[1:-2], "with a ", highest*100, "% probability"
+    if (code.strip() == str(int(rank5[3][0]))):
+	print MODEL[0], "4th infers that the image contains ", result.strip()[1:-2], "with a ", highest*100, "% probability"
+    if (code.strip() == str(int(rank5[4][0]))):
+	print MODEL[0], "5th infers that the image contains ", result.strip()[1:-2], "with a ", highest*100, "% probability"
+
+file.close()
+t2 = time.time()
+print('processing time: ' + str(t2 - t1) + '(sec)')
