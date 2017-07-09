@@ -145,7 +145,9 @@ with open(PREDICT_NET) as f:
 p = workspace.Predictor(init_net, predict_net)
 
 # run the net and return prediction
+t3 = time.time()
 results = p.run([img])
+t4 = time.time()
 
 # turn it into something we can play with and examine which is in a multi-dimensional array
 results = np.asarray(results)
@@ -190,4 +192,5 @@ for line in file:
 
 file.close()
 t2 = time.time()
+print('inference time: ' + str(t4 - t3) + '(sec)')
 print('processing time: ' + str(t2 - t1) + '(sec)')
