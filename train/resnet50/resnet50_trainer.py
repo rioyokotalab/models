@@ -59,14 +59,10 @@ def AddImageInput(model, reader, batch_size, img_size):
         std=128.,
         scale=256,
         crop=img_size,
-        mirror=1,
-        output_type='float16',
-        # output_type=core.DataType.FLOAT16,
+        mirror=1
     )
 
     data = model.StopGradient(data, data)
-    print(data.Net().__class__)
-    print(label.meta)
 
 
 def SaveModel(args, train_model, epoch):
