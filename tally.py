@@ -1,18 +1,5 @@
 # -*- coding: utf-8 -*-
 
-"""
-要件定義
-ファイルのディレクトリをpathで渡す
-そのディレクトリ内の 000.log~099.logまでを読み込み
-
-inference time: 2.45716309547(sec)
-processing time: 4.70762586594(sec)
-
-みたいなとこだけ抜き出す
-
-すべての値を足し合わせて平均をとって出力
-"""
-
 def output_average_time(path):
     sum_inference_time = 0
     sum_processing_time = 0
