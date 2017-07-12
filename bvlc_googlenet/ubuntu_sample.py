@@ -11,7 +11,7 @@ print("Required modules imported.")
 
 # Configuration --- Change to your setup and preferences!
 # CAFFE_MODELS = "/home/hiroki11/models"
-CAFFE_MODELS = "/home/pi/models"
+CAFFE_MODELS = "/home/hiroki11x/dl/models"
 
 # sample images you can try, or use any URL to a regular image.
 # IMAGE_LOCATION = "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f8/Whole-Lemon.jpg/1235px-Whole-Lemon.jpg"
@@ -27,7 +27,7 @@ CAFFE_MODELS = "/home/pi/models"
 # IMAGE_LOCATION = "images/aircraft-carrier.jpg"
 
 # IMAGE_LOCATION = "/home/hiroki11/models/img/3.jpg"
-IMAGE_LOCATION = "/home/pi/models/img/2.jpg"
+IMAGE_LOCATION = "/home/hiroki11x/dl/models/img/2.jpg"
 
 # What model are we using? You should have already converted or downloaded one.
 # format below is the model's:
@@ -38,7 +38,7 @@ MODEL = 'bvlc_googlenet', 'init_net.pb', 'predict_net.pb', 'ilsvrc_2012_mean.npy
 
 # codes - these help decypher the output and source from a list from AlexNet's object codes to provide an result like "tabby cat" or "lemon" depending on what's in the picture you submit to the neural network.
 # The list of output codes for the AlexNet models (squeezenet)
-codes =  "/home/pi/models/label/alexnet_codes"
+codes =  "/home/hiroki11x/dl/models/label/alexnet_codes"
 print "Config set!"
 
 t1 = time.time()
