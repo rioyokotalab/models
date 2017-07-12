@@ -6,6 +6,7 @@ from __future__ import division
 from __future__ import print_function
 
 from caffe2.python import brew
+from caffe2.python.modeling.initializers import pFP16Initializer
 '''
 Utility for creating ResNets
 See "Deep Residual Learning for Image Recognition" by He, Zhang et. al. 2015
@@ -35,6 +36,8 @@ class ResNetBuilder():
             in_filters,
             out_filters,
             weight_init=("MSRAFill", {}),
+            WeightInitializer=pFP16Initializer,
+            BiasInitializer=pFP16Initializer,
             kernel=kernel,
             stride=stride,
             pad=pad,
@@ -119,6 +122,8 @@ class ResNetBuilder():
                 input_filters,
                 output_filters,
                 weight_init=("MSRAFill", {}),
+                WeightInitializer=pFP16Initializer,
+                BiasInitializer=pFP16Initializer,
                 kernel=1,
                 stride=(1 if down_sampling is False else 2),
                 no_bias=self.no_bias,
@@ -180,6 +185,8 @@ class ResNetBuilder():
                 input_filters,
                 num_filters,
                 weight_init=("MSRAFill", {}),
+                WeightInitializer=pFP16Initializer,
+                BiasInitializer=pFP16Initializer,
                 kernel=1,
                 stride=(1 if down_sampling is False else 2),
                 no_bias=self.no_bias,
@@ -228,6 +235,8 @@ def create_resnet50(
         num_input_channels,
         64,
         weight_init=("MSRAFill", {}),
+        WeightInitializer=pFP16Initializer,
+        BiasInitializer=pFP16Initializer,
         kernel=conv1_kernel,
         stride=conv1_stride,
         pad=3,
@@ -281,11 +290,16 @@ def create_resnet50(
 
     # Final dimension of the "image" is reduced to 7x7
     last_out = brew.fc(
-        model, final_avg, 'last_out_L{}'.format(num_labels), 2048, num_labels
+        model, final_avg, 'last_out_L{}'.format(num_labels), 2048, num_labels,
+        WeightInitializer=pFP16Initializer,
+        BiasInitializer=pFP16Initializer,
     )
 
     if no_loss:
         return last_out
+
+    # float16 --> float32
+    last_out = model.HalfToFloat(last_out, 'last_out_fp16')
 
     # If we create model for training, use softmax-with-loss
     if (label is not None):
@@ -309,7 +323,9 @@ def create_resnet_32x32(
     '''
     # conv1 + maxpool
     brew.conv(
-        model, data, 'conv1', num_input_channels, 16, kernel=3, stride=1
+        model, data, 'conv1', num_input_channels, 16, kernel=3, stride=1,
+        WeightInitializer=pFP16Initializer,
+        BiasInitializer=pFP16Initializer,
     )
     brew.spatial_bn(
         model, 'conv1', 'conv1_spatbn', 16, epsilon=1e-3, is_test=is_test

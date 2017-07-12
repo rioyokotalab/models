@@ -59,10 +59,15 @@ def AddImageInput(model, reader, batch_size, img_size):
         std=128.,
         scale=256,
         crop=img_size,
-        mirror=1
+        mirror=1,
+        output_type='float16',
+        use_gpu_transform=True,
+        # output_type=core.DataType.FLOAT16,
     )
 
     data = model.StopGradient(data, data)
+    print(data.Net().__class__)
+    print(label.meta)
 
 
 def SaveModel(args, train_model, epoch):
@@ -270,15 +275,24 @@ def Train(args):
     def add_optimizer(model):
         stepsz = int(30 * args.epoch_size / total_batch_size / num_shards)
         optimizer.add_weight_decay(model, args.weight_decay)
-        optimizer.build_sgd(
+        opt = optimizer.build_multi_precision_sgd(
             model,
             args.base_learning_rate,
-            momentum=0.9,
+            momentump=0.9,
             nesterov=1,
             policy="step",
             stepsize=stepsz,
             gamma=0.1
         )
+        # optimizer.build_sgd(
+        #     model,
+        #     args.base_learning_rate,
+        #     momentump=0.9,
+        #     nesterov=1,
+        #     policy="step",
+        #     stepsize=stepsz,
+        #     gamma=0.1
+        # )
 
     # Input. Note that the reader must be shared with all GPUS.
     reader = train_model.CreateDB(
@@ -458,5 +472,5 @@ def main():
     Train(args)
 
 if __name__ == '__main__':
-    workspace.GlobalInit(['caffe2', '--caffe2_log_level=2'])
+    workspace.GlobalInit(['caffe2', '--caffe2_log_level=-10000'])
     main()
