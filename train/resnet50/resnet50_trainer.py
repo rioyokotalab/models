@@ -15,7 +15,7 @@ from caffe2.python import core, workspace, experiment_util, data_parallel_model
 from caffe2.python import dyndep, optimizer
 from caffe2.python import timeout_guard, model_helper, brew
 
-import resnet as resnet
+import caffe2.python.models.resnet as resnet
 import caffe2.python.predictor.predictor_exporter as pred_exp
 import caffe2.python.predictor.predictor_py_utils as pred_utils
 from caffe2.python.predictor_constants import predictor_constants as predictor_constants
@@ -23,13 +23,10 @@ from caffe2.python.predictor_constants import predictor_constants as predictor_c
 '''
 Parallelized multi-GPU distributed trainer for Resnet 50. Can be used to train
 on imagenet data, for example.
-
 To run the trainer in single-machine multi-gpu mode by setting num_shards = 1.
-
 To run the trainer in multi-machine multi-gpu mode with M machines,
 run the same program on all machines, specifying num_shards = M, and
 shard_id = a unique integer in the set [0, M-1].
-
 For rendezvous (the trainer processes have to know about each other),
 you can either use a directory path that is visible to all processes
 (e.g. NFS directory), or use a Redis instance. Use the former by
@@ -59,14 +56,10 @@ def AddImageInput(model, reader, batch_size, img_size):
         std=128.,
         scale=256,
         crop=img_size,
-        mirror=1,
-        output_type='float16',
-        # output_type=core.DataType.FLOAT16,
+        mirror=1
     )
 
     data = model.StopGradient(data, data)
-    print(data.Net().__class__)
-    print(label.meta)
 
 
 def SaveModel(args, train_model, epoch):
