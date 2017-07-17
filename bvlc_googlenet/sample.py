@@ -10,7 +10,7 @@ import time
 print("Required modules imported.")
 
 CAFFE_MODELS = "/home/pi/models"
-IMAGE_LOCATION = "/home/pi/models/img/2.jpg"
+IMAGE_LOCATION = "/home/pi/models/img/testimage/image-1499439202.0845363.jpg"
 MODEL = 'bvlc_googlenet', 'init_net.pb', 'predict_net.pb', 'ilsvrc_2012_mean.npy', 227
 codes =  "/home/pi/models/label/alexnet_codes"
 print "Config set!"
