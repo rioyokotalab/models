@@ -6,10 +6,15 @@ from matplotlib import pyplot
 import os
 from caffe2.python import core, workspace, models
 import urllib2
+import sys
+import warnings
+
+warnings.filterwarnings('ignore')
 print("Required modules imported.")
 
 # Configuration --- Change to your setup and preferences!
-CAFFE_MODELS = "/home/hiroki11/models"
+# CAFFE_MODELS = "/home/hiroki11/models"
+CAFFE_MODELS = "/home/hiroki11x/dl/models"
 
 # sample images you can try, or use any URL to a regular image.
 # IMAGE_LOCATION = "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f8/Whole-Lemon.jpg/1235px-Whole-Lemon.jpg"
@@ -23,8 +28,11 @@ CAFFE_MODELS = "/home/hiroki11/models"
 # IMAGE_LOCATION = "images/pretzel.jpg"
 # IMAGE_LOCATION = "images/orangutan.jpg"
 # IMAGE_LOCATION = "images/aircraft-carrier.jpg"
-IMAGE_LOCATION = "/home/hiroki11/models/img/3.jpg"
 
+# IMAGE_LOCATION = "/home/hiroki11/models/img/3.jpg"
+# IMAGE_LOCATION = "/home/hiroki11x/dl/models/img/convertimage/4.jpg"
+args = sys.argv
+IMAGE_LOCATION = args[1]
 # What model are we using? You should have already converted or downloaded one.
 # format below is the model's: 
 # folder, INIT_NET, predict_net, mean, input image size
@@ -160,14 +168,22 @@ for i, r in enumerate(results):
         highest = r
         index = i 
 
-# top 3 results
-print "Raw top 3 results:", sorted(arr, key=lambda x: x[1], reverse=True)[:3]
+# top 5 results
+rank5 = sorted(arr, key=lambda x: x[1], reverse=True)[:5]
+print "Raw top 5 results:", rank5
 
 # now we can grab the code list
 response = urllib2.urlopen(codes)
-
 # and lookup our result from the list
 for line in response:
     code, result = line.partition(":")[::2]
-    if (code.strip() == str(index)):
-        print MODEL[0], "infers that the image contains ", result.strip()[1:-2], "with a ", highest*100, "% probability"
+    if (code.strip() == str(int(rank5[0][0]))):
+        print MODEL[0], "1st infers that the image contains ", result.strip()[1:-2], "with a ", rank5[0][1]*100, "% probability"
+    if (code.strip() == str(int(rank5[1][0]))):
+	print MODEL[0], "2nd infers that the image contains ", result.strip()[1:-2], "with a ", rank5[1][1]*100, "% probability"
+    if (code.strip() == str(int(rank5[2][0]))):
+	print MODEL[0], "3rd infers that the image contains ", result.strip()[1:-2], "with a ", rank5[2][1]*100, "% probability"
+    if (code.strip() == str(int(rank5[3][0]))):
+	print MODEL[0], "4th infers that the image contains ", result.strip()[1:-2], "with a ", rank5[3][1]*100, "% probability"
+    if (code.strip() == str(int(rank5[4][0]))):
+	print MODEL[0], "5th infers that the image contains ", result.strip()[1:-2], "with a ", rank5[4][1]*100, "% probability"
