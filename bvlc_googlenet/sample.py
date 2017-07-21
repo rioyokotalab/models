@@ -6,6 +6,10 @@ from matplotlib import pyplot
 import os
 from caffe2.python import core, workspace, models
 import urllib2
+import sys
+import warnings
+
+warnings.filterwarnings('ignore')
 print("Required modules imported.")
 
 # Configuration --- Change to your setup and preferences!
@@ -26,8 +30,9 @@ CAFFE_MODELS = "/home/hiroki11x/dl/models"
 # IMAGE_LOCATION = "images/aircraft-carrier.jpg"
 
 # IMAGE_LOCATION = "/home/hiroki11/models/img/3.jpg"
-IMAGE_LOCATION = "/home/hiroki11x/dl/models/img/2.jpg"
-
+# IMAGE_LOCATION = "/home/hiroki11x/dl/models/img/convertimage/4.jpg"
+args = sys.argv
+IMAGE_LOCATION = args[1]
 # What model are we using? You should have already converted or downloaded one.
 # format below is the model's: 
 # folder, INIT_NET, predict_net, mean, input image size
